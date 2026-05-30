@@ -34,6 +34,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -43,6 +45,15 @@ import com.panini.supportapp.domain.model.Ticket
 import com.panini.supportapp.domain.model.TicketStatus
 import com.panini.supportapp.domain.repository.TicketRepository
 import com.panini.supportapp.presentation.common.UiState
+
+private val PriorityHigh = Color(0xFFD32F2F)
+private val PriorityMedium = Color(0xFFF9A825)
+private val PriorityLow = Color(0xFF2E7D32)
+
+private val StatusOpen = Color(0xFFE53935)
+private val StatusInProgress = Color(0xFF1565C0)
+private val StatusResolved = Color(0xFF43A047)
+private val StatusClosed = Color(0xFF616161)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,7 +81,6 @@ fun TicketListScreen(
             )
         },
         floatingActionButton = {
-            // Feature Flag: hide FAB if ticket creation is disabled
             if (FeatureFlags.ticketCreationEnabled) {
                 FloatingActionButton(onClick = onCreateTicket) {
                     Icon(Icons.Default.Add, contentDescription = "Create ticket")
@@ -119,80 +129,54 @@ private fun TicketCard(ticket: Ticket, onClick: () -> Unit) {
             .clickable(onClick = onClick),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                Text(
-                    text = ticket.title,
-                    style = MaterialTheme.typography.titleSmall,
-                    modifier = Modifier.weight(1f).padding(end = 8.dp)
-                )
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Text(
+                text = ticket.title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold
+            )
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 PriorityBadge(priority = ticket.priority)
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
                 StatusBadge(status = ticket.status)
-                Text(
-                    text = ticket.category.label,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
             }
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = ticket.supplier,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = ticket.createdAt.take(10),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
         }
     }
 }
 
 @Composable
 private fun PriorityBadge(priority: Priority) {
-    val color = when (priority) {
-        Priority.HIGH -> MaterialTheme.colorScheme.errorContainer
-        Priority.MEDIUM -> MaterialTheme.colorScheme.tertiaryContainer
-        Priority.LOW -> MaterialTheme.colorScheme.secondaryContainer
+    val (background, content) = when (priority) {
+        Priority.HIGH -> PriorityHigh to Color.White
+        Priority.MEDIUM -> PriorityMedium to Color(0xFF212121)
+        Priority.LOW -> PriorityLow to Color.White
     }
-    Surface(color = color, shape = MaterialTheme.shapes.small) {
-        Text(
-            text = priority.label,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-            style = MaterialTheme.typography.labelSmall
-        )
-    }
+    ColoredBadge(label = priority.label, background = background, content = content)
 }
 
 @Composable
 private fun StatusBadge(status: TicketStatus) {
-    val color = when (status) {
-        TicketStatus.OPEN -> MaterialTheme.colorScheme.errorContainer
-        TicketStatus.IN_PROGRESS -> MaterialTheme.colorScheme.tertiaryContainer
-        TicketStatus.RESOLVED -> MaterialTheme.colorScheme.secondaryContainer
-        TicketStatus.CLOSED -> MaterialTheme.colorScheme.surfaceVariant
+    val (background, content) = when (status) {
+        TicketStatus.OPEN -> StatusOpen to Color.White
+        TicketStatus.IN_PROGRESS -> StatusInProgress to Color.White
+        TicketStatus.RESOLVED -> StatusResolved to Color.White
+        TicketStatus.CLOSED -> StatusClosed to Color.White
     }
-    Surface(color = color, shape = MaterialTheme.shapes.small) {
+    ColoredBadge(label = status.label, background = background, content = content)
+}
+
+@Composable
+private fun ColoredBadge(label: String, background: Color, content: Color) {
+    Surface(color = background, shape = MaterialTheme.shapes.small) {
         Text(
-            text = status.label,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-            style = MaterialTheme.typography.labelSmall
+            text = label,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            color = content
         )
     }
 }
