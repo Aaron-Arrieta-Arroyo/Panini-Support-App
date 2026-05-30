@@ -41,7 +41,7 @@ class TicketListViewModel(private val repository: TicketRepository) : ViewModel(
             _uiState.value = UiState.Loading
             runCatching { repository.getTickets() }
                 .onSuccess { _uiState.value = UiState.Success(it) }
-                .onFailure { _uiState.value = UiState.Error(it.message ?: "Error desconocido") }
+                .onFailure { _uiState.value = UiState.Error(it.message ?: "Unknown error") }
         }
     }
 

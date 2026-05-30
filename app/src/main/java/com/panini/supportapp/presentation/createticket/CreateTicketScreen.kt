@@ -48,10 +48,10 @@ fun CreateTicketScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Nuevo Ticket") },
+                title = { Text("New Ticket") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -71,7 +71,7 @@ fun CreateTicketScreen(
             OutlinedTextField(
                 value = uiState.title,
                 onValueChange = viewModel::onTitleChange,
-                label = { Text("Título *") },
+                label = { Text("Title *") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
@@ -79,7 +79,7 @@ fun CreateTicketScreen(
             OutlinedTextField(
                 value = uiState.description,
                 onValueChange = viewModel::onDescriptionChange,
-                label = { Text("Descripción *") },
+                label = { Text("Description *") },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 3,
                 maxLines = 6
@@ -88,7 +88,7 @@ fun CreateTicketScreen(
             OutlinedTextField(
                 value = uiState.supplier,
                 onValueChange = viewModel::onSupplierChange,
-                label = { Text("Proveedor *") },
+                label = { Text("Supplier *") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
@@ -96,13 +96,13 @@ fun CreateTicketScreen(
             OutlinedTextField(
                 value = uiState.affectedQuantity,
                 onValueChange = viewModel::onAffectedQuantityChange,
-                label = { Text("Unidades afectadas") },
+                label = { Text("Affected units") },
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true
             )
 
-            Text("Prioridad", style = MaterialTheme.typography.labelMedium)
+            Text("Priority", style = MaterialTheme.typography.labelMedium)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Priority.entries.forEach { priority ->
                     FilterChip(
@@ -113,7 +113,7 @@ fun CreateTicketScreen(
                 }
             }
 
-            Text("Categoría", style = MaterialTheme.typography.labelMedium)
+            Text("Category", style = MaterialTheme.typography.labelMedium)
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 TicketCategory.entries.forEach { category ->
                     FilterChip(
@@ -141,7 +141,7 @@ fun CreateTicketScreen(
                         strokeWidth = 2.dp
                     )
                 } else {
-                    Text("Crear Ticket")
+                    Text("Create Ticket")
                 }
             }
         }

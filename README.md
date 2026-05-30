@@ -109,7 +109,7 @@ Two flags are controlled from **Settings** (gear icon on the ticket list):
 | Flag | Effect |
 |---|---|
 | `ticketCreationEnabled` | Shows/hides the Create Ticket FAB |
-| `priorityUpdateEnabled` | Shows/hides the "Cambiar Prioridad" button in ticket detail |
+| `priorityUpdateEnabled` | Shows/hides the "Change Priority" button in ticket detail |
 
 Flags use Compose `mutableStateOf`, so toggling them in Settings updates the UI immediately.
 

@@ -1,47 +1,47 @@
-# Decisiones Técnicas — Panini Support App
+# Technical Decisions — Panini Support App
 
-Documento de handoff para ingenieros que continúen el proyecto.  
-Explica **qué** se construyó, **por qué** se eligió cada herramienta y **cómo** extenderlo.
+Handoff document for engineers continuing the project.  
+Explains **what** was built, **why** each tool was chosen, and **how** to extend it.
 
 ---
 
-## 1. Patrón arquitectónico: MVVM + Repository
+## 1. Architectural pattern: MVVM + Repository
 
-### Por qué MVVM
+### Why MVVM
 
-MVVM separa la UI (Composables) del estado (ViewModel) y de los datos (Repository).  
-El beneficio concreto para este proyecto:
+MVVM separates UI (Composables) from state (ViewModel) and data (Repository).  
+The concrete benefit for this project:
 
-- El ViewModel no importa nada de Android UI (`Context`, `Activity`, etc.), por lo que puede ser testeado sin emulador.
-- El Composable solo observa un `StateFlow` — no decide ni procesa, solo dibuja.
-- El Repository es una interfaz: cambiar de mock a backend real no toca ni el ViewModel ni la pantalla.
+- The ViewModel does not import any Android UI types (`Context`, `Activity`, etc.), so it can be tested without an emulator.
+- The Composable only observes a `StateFlow` — it does not decide or process, it only renders.
+- The Repository is an interface: switching from mock to a real backend does not touch the ViewModel or the screen.
 
-### Por qué no Clean Architecture con UseCases
+### Why not Clean Architecture with UseCases
 
-Un PoC de corto plazo con un equipo pequeño **no justifica** el overhead de UseCases. Agregarlos aquí sería complejidad sin beneficio real hoy.
+A short-term PoC with a small team **does not justify** the overhead of UseCases. Adding them here would be complexity without real benefit today.
 
-Si el proyecto crece: insertar UseCases entre ViewModel y Repository es una operación local que no requiere tocar pantallas ni repositorios.
+If the project grows: inserting UseCases between ViewModel and Repository is a local change that does not require touching screens or repositories.
 
-### Estructura de capas
+### Layer structure
 
 ```
-presentation/   Composables + ViewModels (observan StateFlow)
-domain/         Modelos de negocio + interfaz TicketRepository
+presentation/   Composables + ViewModels (observe StateFlow)
+domain/         Business models + TicketRepository interface
 data/           DTOs, Retrofit, MockTicketRepository
-core/           Herramientas transversales (eventos, feature flags)
+core/           Cross-cutting tools (events, feature flags)
 ```
 
 ---
 
-## 2. Comunicación basada en eventos: SharedFlow
+## 2. Event-based communication: SharedFlow
 
-### Problema que resuelve
+### Problem it solves
 
-Cuando el usuario crea un ticket o cambia su prioridad, la pantalla de lista debe actualizarse **sin que el usuario tenga que volver atrás y recargar**.
+When the user creates a ticket or changes its priority, the list screen must update **without the user having to go back and reload**.
 
-La solución obvia (llamar `loadTickets()` después de cada acción) funcionaría, pero re-haría la llamada al repositorio completa — en producción eso es una petición de red innecesaria.
+The obvious solution (calling `loadTickets()` after every action) would work, but it would re-run the full repository call — in production that is an unnecessary network request.
 
-### Solución: `TicketEventBus` con `SharedFlow`
+### Solution: `TicketEventBus` with `SharedFlow`
 
 ```kotlin
 object TicketEventBus {
@@ -51,24 +51,24 @@ object TicketEventBus {
 }
 ```
 
-Es un bus de eventos a nivel de aplicación. Cualquier ViewModel puede emitir o escuchar.
+It is an application-level event bus. Any ViewModel can emit or listen.
 
-**Flujo para creación de ticket:**
+**Flow for ticket creation:**
 
 ```
 CreateTicketViewModel
-  → repository.createTicket(ticket)         // persiste el ticket
-  → TicketEventBus.emit(TicketCreated)      // notifica al bus
+  → repository.createTicket(ticket)         // persists the ticket
+  → TicketEventBus.emit(TicketCreated)      // notifies the bus
 
-TicketListViewModel (collector activo en viewModelScope)
-  → recibe TicketCreated
-  → inserta el ticket en la lista local
-  → re-ordena por prioridad
-  → emite nuevo estado al StateFlow
-  → Composable recompone automáticamente
+TicketListViewModel (active collector in viewModelScope)
+  → receives TicketCreated
+  → inserts the ticket into the local list
+  → re-sorts by priority
+  → emits new state to StateFlow
+  → Composable recomposes automatically
 ```
 
-**Flujo para actualización de prioridad:**
+**Flow for priority update:**
 
 ```
 TicketDetailViewModel
@@ -76,31 +76,31 @@ TicketDetailViewModel
   → TicketEventBus.emit(PriorityUpdated)
 
 TicketListViewModel
-  → actualiza el ticket en la lista
-  → re-ordena: HIGH (sortOrder=0) sube, LOW (sortOrder=2) baja
-  → Composable recompone — el ticket cambia de posición sin recargar
+  → updates the ticket in the list
+  → re-sorts: HIGH (sortOrder=0) moves up, LOW (sortOrder=2) moves down
+  → Composable recomposes — the ticket changes position without reloading
 ```
 
-### Por qué SharedFlow y no otras opciones
+### Why SharedFlow and not other options
 
-| Alternativa | Razón para no usarla |
+| Alternative | Reason not to use it |
 |---|---|
-| Llamar `loadTickets()` de nuevo | Re-petición de red innecesaria, no es "reactivo" |
-| `LiveData` | Requiere `LifecycleOwner`, no es Kotlin-nativo |
-| Callback entre ViewModels | Acoplamiento fuerte, difícil de mantener |
-| `SharedFlow` ✓ | Lifecycle-independiente, soporta múltiples colectores, Kotlin coroutines nativo |
+| Call `loadTickets()` again | Unnecessary re-fetch, not truly reactive |
+| `LiveData` | Requires `LifecycleOwner`, not Kotlin-native |
+| Callback between ViewModels | Tight coupling, hard to maintain |
+| `SharedFlow` ✓ | Lifecycle-independent, supports multiple collectors, native Kotlin coroutines |
 
-`replay = 0` (por defecto): un colector nuevo no recibe eventos anteriores. Esto evita que una pantalla recién abierta reaccione a eventos que ya ocurrieron.
+`replay = 0` (default): a new collector does not receive past events. This prevents a newly opened screen from reacting to events that already occurred.
 
 ---
 
 ## 3. Feature Flags
 
-### Por qué Feature Flags
+### Why Feature Flags
 
-La empresa necesita poder **habilitar o deshabilitar funcionalidades rápidamente** durante pruebas internas sin modificar código ni hacer un nuevo release.
+The business needs to **enable or disable features quickly** during internal testing without changing code or shipping a new release.
 
-### Implementación
+### Implementation
 
 ```kotlin
 object FeatureFlags {
@@ -109,85 +109,85 @@ object FeatureFlags {
 }
 ```
 
-Se usan `mutableStateOf` de Compose: cuando el valor cambia (desde `SettingsScreen`), **todos los Composables que lo leen se recomponen automáticamente**. No se necesita ningún ViewModel adicional para esto.
+They use Compose `mutableStateOf`: when the value changes (from `SettingsScreen`), **every Composable that reads it recomposes automatically**. No extra ViewModel is needed.
 
 **Flag 1 — `ticketCreationEnabled`:**  
-Controla si el FAB "+" aparece en la lista. Si está desactivado, el botón desaparece y la pantalla de creación es inaccesible.
+Controls whether the "+" FAB appears on the list. When disabled, the button disappears and the create screen is inaccessible.
 
 **Flag 2 — `priorityUpdateEnabled`:**  
-Controla si el botón "Cambiar Prioridad" aparece en el detalle del ticket. Si está desactivado, el estado se puede cambiar pero no la prioridad.
+Controls whether the "Change Priority" button appears on the ticket detail screen. When disabled, status can still be changed but not priority.
 
-### Cómo usarlo
+### How to use it
 
 ```kotlin
-// En cualquier Composable:
+// In any Composable:
 if (FeatureFlags.ticketCreationEnabled) {
     FloatingActionButton(onClick = onCreateTicket) { ... }
 }
 ```
 
-El toggle en `SettingsScreen` modifica el flag directamente — la recomposición es inmediata.
+The toggle in `SettingsScreen` modifies the flag directly — recomposition is immediate.
 
-### Cómo evolucionar
+### How to evolve
 
-Para conectar los flags a un servicio remoto (Firebase Remote Config, etc.):
+To connect flags to a remote service (Firebase Remote Config, etc.):
 
 ```kotlin
-// En AppContainer, al iniciar la app:
+// In AppContainer, at app startup:
 val remoteFlags = RemoteConfigService.fetch()
 FeatureFlags.ticketCreationEnabled = remoteFlags.ticketCreation
 FeatureFlags.priorityUpdateEnabled = remoteFlags.priorityUpdate
 ```
 
-Ningún Composable ni ViewModel cambia.
+No Composable or ViewModel changes.
 
 ---
 
-## 4. Networking preparado para el backend
+## 4. Networking ready for the backend
 
-El backend no existe aún, pero la estructura está lista para conectarse sin reorganizar el proyecto.
+The backend does not exist yet, but the structure is ready to connect without reorganizing the project.
 
-**Capa de red actual:**
+**Current network layer:**
 
 ```
-TicketApiService     — interfaz Retrofit con los 5 endpoints del sistema
-NetworkClient        — OkHttpClient + Retrofit configurados, BASE_URL definida
-RemoteTicketRepository — implementación de TicketRepository usando el API
-MockTicketRepository   — implementación actual con datos en memoria
+TicketApiService       — Retrofit interface with the 5 system endpoints
+NetworkClient          — OkHttpClient + Retrofit configured, BASE_URL defined
+RemoteTicketRepository — TicketRepository implementation using the API
+MockTicketRepository   — current in-memory implementation
 ```
 
-**Para activar el backend real:** cambiar **una línea** en `AppContainer.kt`:
+**To activate the real backend:** change **one line** in `AppContainer.kt`:
 
 ```kotlin
-// Actual (mock):
+// Current (mock):
 val ticketRepository: TicketRepository = MockTicketRepository()
 
-// Producción:
+// Production:
 val ticketRepository: TicketRepository = RemoteTicketRepository(NetworkClient.ticketApiService)
 ```
 
-Ningún ViewModel ni Composable sabe qué implementación está activa.
+No ViewModel or Composable knows which implementation is active.
 
 ---
 
-## 5. Datos mock
+## 5. Mock data
 
-`MockData.kt` contiene 10 tickets que representan escenarios reales de operación Panini:
+`MockData.kt` contains 10 tickets representing real Panini operational scenarios:
 
-- Faltantes de inventario en puntos de venta
-- Pedidos no entregados por proveedores
-- Errores en conteo de lotes
-- Daños en empaque durante transporte
-- Códigos QR inválidos en sobres
-- Pedidos duplicados en el sistema
+- Inventory shortages at points of sale
+- Orders not delivered by suppliers
+- Batch count errors
+- Packaging damage during transport
+- Invalid QR codes on packs
+- Duplicate orders in the system
 
-Los datos usan nombres reales de empresas ficticias de distribución y categorías coherentes con el contexto (`INVENTORY`, `DISTRIBUTION`, `LOGISTICS`, `SUPPLIER`, `QUALITY`).
+The data uses realistic fictional distributor company names and categories aligned with the context (`INVENTORY`, `DISTRIBUTION`, `LOGISTICS`, `SUPPLIER`, `QUALITY`).
 
 ---
 
-## 6. Manejo de estados de pantalla
+## 6. Screen state handling
 
-Todas las pantallas que cargan datos async usan el mismo patrón:
+All screens that load data asynchronously use the same pattern:
 
 ```kotlin
 sealed class UiState<out T> {
@@ -197,7 +197,7 @@ sealed class UiState<out T> {
 }
 ```
 
-En el Composable:
+In the Composable:
 
 ```kotlin
 when (val state = uiState) {
@@ -207,30 +207,30 @@ when (val state = uiState) {
 }
 ```
 
-Consistencia garantizada: cualquier ingeniero nuevo reconoce el patrón en cualquier pantalla.
+Guaranteed consistency: any new engineer recognizes the pattern on any screen.
 
 ---
 
-## 7. Para continuar el proyecto
+## 7. Continuing the project
 
-**Si necesitás agregar una pantalla nueva:**
-1. Agregar `data object NuevaPantalla : Screen("ruta")` en `Screen.kt`
-2. Agregar `composable(Screen.NuevaPantalla.route)` en `AppNavigation.kt`
-3. Crear `NuevaPantallaScreen.kt` y `NuevaPantallaViewModel.kt` en un nuevo package bajo `presentation/`
-4. Agregar el método al `TicketRepository` si se necesitan datos nuevos
+**If you need to add a new screen:**
+1. Add `data object NewScreen : Screen("route")` in `Screen.kt`
+2. Add `composable(Screen.NewScreen.route)` in `AppNavigation.kt`
+3. Create `NewScreenScreen.kt` and `NewScreenViewModel.kt` in a new package under `presentation/`
+4. Add the method to `TicketRepository` if new data is needed
 
-**Si necesitás agregar un endpoint:**
-1. Agregar el método en `TicketApiService.kt`
-2. Agregar el DTO correspondiente en `data/dto/`
-3. Implementar en `RemoteTicketRepository` y `MockTicketRepository`
-4. Actualizar `contracts/tickets-api.yaml`
+**If you need to add an endpoint:**
+1. Add the method in `TicketApiService.kt`
+2. Add the corresponding DTO in `data/dto/`
+3. Implement in `RemoteTicketRepository` and `MockTicketRepository`
+4. Update `contracts/tickets-api.yaml`
 
-**Si necesitás agregar un Feature Flag:**
-1. Agregar `var nuevoFlag by mutableStateOf(true)` en `FeatureFlags.kt`
-2. Leer el flag en el Composable correspondiente
-3. Agregar el toggle en `SettingsScreen.kt`
+**If you need to add a Feature Flag:**
+1. Add `var newFlag by mutableStateOf(true)` in `FeatureFlags.kt`
+2. Read the flag in the corresponding Composable
+3. Add the toggle in `SettingsScreen.kt`
 
-**Stack mínimo para trabajar en el proyecto:**
+**Minimum stack to work on the project:**
 - Kotlin, Jetpack Compose, Coroutines, StateFlow/SharedFlow
-- Patrón MVVM (ViewModel + Repository)
-- Retrofit + Gson para networking
+- MVVM pattern (ViewModel + Repository)
+- Retrofit + Gson for networking

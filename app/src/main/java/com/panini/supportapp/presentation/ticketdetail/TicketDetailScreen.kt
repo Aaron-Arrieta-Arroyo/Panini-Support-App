@@ -59,10 +59,10 @@ fun TicketDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Detalle del Ticket") },
+                title = { Text("Ticket Details") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -118,17 +118,17 @@ private fun TicketDetailContent(
 
         HorizontalDivider()
 
-        DetailRow("Estado", ticket.status.label)
-        DetailRow("Prioridad", ticket.priority.label)
-        DetailRow("Proveedor", ticket.supplier)
-        DetailRow("Categoría", ticket.category.label)
-        DetailRow("Fecha de creación", ticket.createdAt.take(10))
-        ticket.assignedTo?.let { DetailRow("Asignado a", it) }
-        ticket.affectedQuantity?.let { DetailRow("Unidades afectadas", it.toString()) }
+        DetailRow("Status", ticket.status.label)
+        DetailRow("Priority", ticket.priority.label)
+        DetailRow("Supplier", ticket.supplier)
+        DetailRow("Category", ticket.category.label)
+        DetailRow("Created on", ticket.createdAt.take(10))
+        ticket.assignedTo?.let { DetailRow("Assigned to", it) }
+        ticket.affectedQuantity?.let { DetailRow("Affected units", it.toString()) }
 
         HorizontalDivider()
 
-        Text("Descripción", style = MaterialTheme.typography.titleSmall)
+        Text("Description", style = MaterialTheme.typography.titleSmall)
         Text(ticket.description, style = MaterialTheme.typography.bodyMedium)
 
         HorizontalDivider()
@@ -143,7 +143,7 @@ private fun TicketDetailContent(
             onClick = { showStatusDialog = true },
             modifier = Modifier.fillMaxWidth(),
             enabled = !isActionLoading
-        ) { Text("Cambiar Estado") }
+        ) { Text("Change Status") }
 
         // Feature Flag: hide priority update button if flag is off
         if (FeatureFlags.priorityUpdateEnabled) {
@@ -151,13 +151,13 @@ private fun TicketDetailContent(
                 onClick = { showPriorityDialog = true },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !isActionLoading
-            ) { Text("Cambiar Prioridad") }
+            ) { Text("Change Priority") }
         }
     }
 
     if (showStatusDialog) {
         OptionsDialog(
-            title = "Seleccionar Estado",
+            title = "Select Status",
             options = TicketStatus.entries.map { it.label },
             onSelect = { index ->
                 onUpdateStatus(TicketStatus.entries[index])
@@ -169,7 +169,7 @@ private fun TicketDetailContent(
 
     if (showPriorityDialog) {
         OptionsDialog(
-            title = "Seleccionar Prioridad",
+            title = "Select Priority",
             options = Priority.entries.map { it.label },
             onSelect = { index ->
                 onUpdatePriority(Priority.entries[index])
@@ -214,7 +214,7 @@ private fun OptionsDialog(
         },
         confirmButton = {},
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancelar") }
+            TextButton(onClick = onDismiss) { Text("Cancel") }
         }
     )
 }

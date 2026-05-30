@@ -46,7 +46,7 @@ class CreateTicketViewModel(private val repository: TicketRepository) : ViewMode
     fun createTicket(onSuccess: () -> Unit) {
         val state = _uiState.value
         if (state.title.isBlank() || state.description.isBlank() || state.supplier.isBlank()) {
-            update { copy(error = "Título, descripción y proveedor son obligatorios") }
+            update { copy(error = "Title, description, and supplier are required") }
             return
         }
 
@@ -73,7 +73,7 @@ class CreateTicketViewModel(private val repository: TicketRepository) : ViewMode
                     onSuccess()
                 }
                 .onFailure {
-                    update { copy(isLoading = false, error = it.message ?: "Error al crear ticket") }
+                    update { copy(isLoading = false, error = it.message ?: "Failed to create ticket") }
                 }
         }
     }

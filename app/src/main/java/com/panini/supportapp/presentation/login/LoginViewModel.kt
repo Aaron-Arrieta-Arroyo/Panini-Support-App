@@ -31,7 +31,7 @@ class LoginViewModel : ViewModel() {
     fun login(onSuccess: () -> Unit) {
         val state = _uiState.value
         if (state.username.isBlank() || state.password.isBlank()) {
-            _uiState.value = state.copy(error = "Ingrese usuario y contraseña")
+            _uiState.value = state.copy(error = "Enter username and password")
             return
         }
 
@@ -45,7 +45,7 @@ class LoginViewModel : ViewModel() {
             } else {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    error = "Credenciales inválidas. Use admin / admin123"
+                    error = "Invalid credentials. Use admin / admin123"
                 )
             }
         }

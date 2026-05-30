@@ -37,10 +37,10 @@ fun SettingsScreen(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Configuración") },
+                title = { Text("Settings") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -61,7 +61,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                 color = MaterialTheme.colorScheme.primary
             )
             Text(
-                text = "Activa o desactiva funcionalidades del sistema en tiempo real.",
+                text = "Enable or disable system features in real time.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -71,8 +71,8 @@ fun SettingsScreen(onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(16.dp))
 
             FlagToggle(
-                title = "Creación de tickets",
-                description = "Muestra u oculta el botón para crear nuevos tickets de soporte.",
+                title = "Ticket creation",
+                description = "Shows or hides the button to create new support tickets.",
                 checked = FeatureFlags.ticketCreationEnabled,
                 onCheckedChange = { FeatureFlags.ticketCreationEnabled = it }
             )
@@ -82,8 +82,8 @@ fun SettingsScreen(onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(16.dp))
 
             FlagToggle(
-                title = "Actualización de prioridad",
-                description = "Permite cambiar la prioridad de un ticket desde la pantalla de detalle.",
+                title = "Priority updates",
+                description = "Allows changing a ticket's priority from the detail screen.",
                 checked = FeatureFlags.priorityUpdateEnabled,
                 onCheckedChange = { FeatureFlags.priorityUpdateEnabled = it }
             )

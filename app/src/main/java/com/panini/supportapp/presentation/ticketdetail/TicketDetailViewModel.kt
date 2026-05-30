@@ -36,9 +36,9 @@ class TicketDetailViewModel(
             runCatching { repository.getTicketById(ticketId) }
                 .onSuccess { ticket ->
                     _uiState.value = if (ticket != null) UiState.Success(ticket)
-                    else UiState.Error("Ticket no encontrado")
+                    else UiState.Error("Ticket not found")
                 }
-                .onFailure { _uiState.value = UiState.Error(it.message ?: "Error desconocido") }
+                .onFailure { _uiState.value = UiState.Error(it.message ?: "Unknown error") }
         }
     }
 
@@ -53,7 +53,7 @@ class TicketDetailViewModel(
                     TicketEventBus.emit(TicketEvent.StatusUpdated(ticketId, status))
                 }
                 .onFailure {
-                    _actionState.value = ActionState.Error(it.message ?: "Error al actualizar estado")
+                    _actionState.value = ActionState.Error(it.message ?: "Failed to update status")
                 }
         }
     }
@@ -69,7 +69,7 @@ class TicketDetailViewModel(
                     TicketEventBus.emit(TicketEvent.PriorityUpdated(ticketId, priority))
                 }
                 .onFailure {
-                    _actionState.value = ActionState.Error(it.message ?: "Error al actualizar prioridad")
+                    _actionState.value = ActionState.Error(it.message ?: "Failed to update priority")
                 }
         }
     }

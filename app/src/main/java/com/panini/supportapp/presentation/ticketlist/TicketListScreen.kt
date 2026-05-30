@@ -58,10 +58,10 @@ fun TicketListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Tickets de Soporte") },
+                title = { Text("Support Tickets") },
                 actions = {
                     IconButton(onClick = onSettings) {
-                        Icon(Icons.Default.Settings, contentDescription = "Configuración")
+                        Icon(Icons.Default.Settings, contentDescription = "Settings")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -73,7 +73,7 @@ fun TicketListScreen(
             // Feature Flag: hide FAB if ticket creation is disabled
             if (FeatureFlags.ticketCreationEnabled) {
                 FloatingActionButton(onClick = onCreateTicket) {
-                    Icon(Icons.Default.Add, contentDescription = "Crear ticket")
+                    Icon(Icons.Default.Add, contentDescription = "Create ticket")
                 }
             }
         }
@@ -94,7 +94,7 @@ fun TicketListScreen(
                 ) {
                     Text(state.message, color = MaterialTheme.colorScheme.error)
                     Spacer(modifier = Modifier.height(8.dp))
-                    Button(onClick = viewModel::loadTickets) { Text("Reintentar") }
+                    Button(onClick = viewModel::loadTickets) { Text("Retry") }
                 }
 
                 is UiState.Success -> LazyColumn(

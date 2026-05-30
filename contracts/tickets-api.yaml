@@ -111,10 +111,10 @@ paths:
             schema:
               $ref: '#/components/schemas/CreateTicketRequest'
             example:
-              title: "Faltante crítico de sobres en punto de venta Escazú"
-              description: "El punto de venta Escazú reporta faltante de 500 sobres de la Serie 1."
+              title: "Critical pack shortage at Escazú point of sale"
+              description: "The Escazú point of sale reports a shortage of 500 packs from Series 1."
               priority: "HIGH"
-              supplier: "Distribuidora Central S.A."
+              supplier: "Central Distributor S.A."
               category: "INVENTORY"
               affected_quantity: 500
       responses:
@@ -282,7 +282,7 @@ components:
           example: "TKT-001"
         title:
           type: string
-          example: "Faltante crítico de sobres en punto de venta Escazú"
+          example: "Critical pack shortage at Escazú point of sale"
         description:
           type: string
         priority:
@@ -295,7 +295,7 @@ components:
           example: "OPEN"
         supplier:
           type: string
-          example: "Distribuidora Central S.A."
+          example: "Central Distributor S.A."
         created_at:
           type: string
           format: date-time
