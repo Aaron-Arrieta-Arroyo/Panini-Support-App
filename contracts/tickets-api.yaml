@@ -1,0 +1,414 @@
+openapi: "3.0.3"
+info:
+  title: Panini Support API
+  description: |
+    API contract for the Panini FIFA World Cup 2026 support ticket system.
+    Defines all endpoints the mobile application will consume once the backend is available.
+
+    Alignment with the Android app (package com.panini.supportapp):
+    - Retrofit interface: data/remote/TicketApiService.kt
+    - DTOs: data/dto/ (Gson @SerializedName matches snake_case fields below)
+    - Domain enums: Priority, TicketStatus, TicketCategory (wire values = enum names)
+    - Repository: TicketRepository maps to GET/POST/PATCH ticket endpoints
+    - Auth: POST /auth/login is defined here; the PoC login screen is simulated locally
+    - Base URL: https://api.panini-support.com/v1 (see NetworkClient.kt)
+  version: "1.0.0"
+  contact:
+    name: Panini Mobile Team
+    email: mobile@panini-support.com
+
+servers:
+  - url: https://api.panini-support.com/v1
+    description: Production
+
+tags:
+  - name: auth
+    description: Authentication
+  - name: tickets
+    description: Support ticket management
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PATHS
+# ─────────────────────────────────────────────────────────────────────────────
+paths:
+
+  # ── Authentication ─────────────────────────────────────────────────────────
+  /auth/login:
+    post:
+      tags: [auth]
+      summary: Authenticate a user and obtain a JWT token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              username: "admin"
+              password: "admin123"
+      responses:
+        '200':
+          description: Successful authentication
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ── Tickets ────────────────────────────────────────────────────────────────
+  /tickets:
+    get:
+      tags: [tickets]
+      summary: List all support tickets
+      description: Returns tickets sorted by priority descending (HIGH first). Supports optional filters.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          description: Filter by ticket status
+          schema:
+            type: string
+            enum: [OPEN, IN_PROGRESS, RESOLVED, CLOSED]
+        - name: priority
+          in: query
+          description: Filter by priority level
+          schema:
+            type: string
+            enum: [HIGH, MEDIUM, LOW]
+        - name: category
+          in: query
+          description: Filter by incident category
+          schema:
+            type: string
+            enum: [INVENTORY, DISTRIBUTION, LOGISTICS, SUPPLIER, QUALITY]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Paginated list of tickets
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [tickets]
+      summary: Create a new support ticket
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTicketRequest'
+            example:
+              title: "Critical pack shortage at Escazú point of sale"
+              description: "The Escazú point of sale reports a shortage of 500 packs from Series 1."
+              priority: "HIGH"
+              supplier: "Central Distributor S.A."
+              category: "INVENTORY"
+              affected_quantity: 500
+      responses:
+        '201':
+          description: Ticket created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /tickets/{id}:
+    get:
+      tags: [tickets]
+      summary: Get ticket by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TicketId'
+      responses:
+        '200':
+          description: Ticket details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /tickets/{id}/status:
+    patch:
+      tags: [tickets]
+      summary: Update the status of a ticket
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TicketId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateStatusRequest'
+            example:
+              status: "IN_PROGRESS"
+      responses:
+        '200':
+          description: Status updated — returns the full updated ticket
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /tickets/{id}/priority:
+    patch:
+      tags: [tickets]
+      summary: Update the priority of a ticket
+      description: Changing priority triggers automatic re-ordering on the client side.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TicketId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePriorityRequest'
+            example:
+              priority: "HIGH"
+      responses:
+        '200':
+          description: Priority updated — returns the full updated ticket
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+# ─────────────────────────────────────────────────────────────────────────────
+# COMPONENTS
+# ─────────────────────────────────────────────────────────────────────────────
+components:
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    TicketId:
+      name: id
+      in: path
+      required: true
+      description: Unique ticket identifier (e.g. TKT-001)
+      schema:
+        type: string
+        example: "TKT-001"
+
+  schemas:
+
+    # ── Auth ──────────────────────────────────────────────────────────────────
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          example: "admin"
+        password:
+          type: string
+          format: password
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: JWT token; include as "Authorization: Bearer <token>"
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        user:
+          $ref: '#/components/schemas/User'
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "USR-001"
+        name:
+          type: string
+          example: "Admin Panini"
+        email:
+          type: string
+          format: email
+          example: "admin@panini.com"
+        role:
+          type: string
+          enum: [ADMIN, AGENT, VIEWER]
+          example: "ADMIN"
+
+    # ── Ticket ────────────────────────────────────────────────────────────────
+    Ticket:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "TKT-001"
+        title:
+          type: string
+          example: "Critical pack shortage at Escazú point of sale"
+        description:
+          type: string
+        priority:
+          type: string
+          enum: [HIGH, MEDIUM, LOW]
+          example: "HIGH"
+        status:
+          type: string
+          enum: [OPEN, IN_PROGRESS, RESOLVED, CLOSED]
+          example: "OPEN"
+        supplier:
+          type: string
+          example: "Central Distributor S.A."
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-05-28T09:15:00Z"
+        category:
+          type: string
+          enum: [INVENTORY, DISTRIBUTION, LOGISTICS, SUPPLIER, QUALITY]
+          example: "INVENTORY"
+        assigned_to:
+          type: string
+          nullable: true
+          example: "Carlos Méndez"
+        affected_quantity:
+          type: integer
+          nullable: true
+          example: 500
+
+    CreateTicketRequest:
+      type: object
+      required: [title, description, priority, supplier, category]
+      properties:
+        title:
+          type: string
+          maxLength: 120
+        description:
+          type: string
+          maxLength: 2000
+        priority:
+          type: string
+          enum: [HIGH, MEDIUM, LOW]
+        supplier:
+          type: string
+        category:
+          type: string
+          enum: [INVENTORY, DISTRIBUTION, LOGISTICS, SUPPLIER, QUALITY]
+        affected_quantity:
+          type: integer
+          nullable: true
+          minimum: 1
+
+    UpdateStatusRequest:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [OPEN, IN_PROGRESS, RESOLVED, CLOSED]
+
+    UpdatePriorityRequest:
+      type: object
+      required: [priority]
+      properties:
+        priority:
+          type: string
+          enum: [HIGH, MEDIUM, LOW]
+
+    TicketListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Ticket'
+        total:
+          type: integer
+          example: 10
+        page:
+          type: integer
+          example: 1
+
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          example: "TICKET_NOT_FOUND"
+        message:
+          type: string
+          example: "The requested ticket does not exist."
+
+  # ── Reusable responses ────────────────────────────────────────────────────
+  responses:
+    Unauthorized:
+      description: Missing or invalid authentication token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: "UNAUTHORIZED"
+            message: "Invalid or expired token."
+    NotFound:
+      description: The requested resource does not exist
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: "NOT_FOUND"
+            message: "Resource not found."
+    BadRequest:
+      description: Invalid request body or parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: "VALIDATION_ERROR"
+            message: "Field 'title' is required."
