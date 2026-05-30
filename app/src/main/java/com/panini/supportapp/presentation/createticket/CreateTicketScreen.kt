@@ -31,7 +31,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.panini.supportapp.core.featureflags.FeatureFlags
 import com.panini.supportapp.domain.model.Priority
 import com.panini.supportapp.domain.model.TicketCategory
 import com.panini.supportapp.domain.repository.TicketRepository
@@ -116,14 +115,7 @@ fun CreateTicketScreen(
 
             Text("Categoría", style = MaterialTheme.typography.labelMedium)
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                // Feature Flag: hide LOGISTICS category if flag is off
-                val categories = if (FeatureFlags.logisticsCategoryVisible) {
-                    TicketCategory.entries
-                } else {
-                    TicketCategory.entries.filter { it != TicketCategory.LOGISTICS }
-                }
-
-                categories.forEach { category ->
+                TicketCategory.entries.forEach { category ->
                     FilterChip(
                         selected = uiState.category == category,
                         onClick = { viewModel.onCategoryChange(category) },
