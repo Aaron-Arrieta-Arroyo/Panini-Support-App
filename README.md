@@ -30,10 +30,7 @@ The app replaces the current email/spreadsheet workflow with a structured ticket
 
 2. Open the `app/` folder in Android Studio as an Android project (or open the root and let Gradle sync).
 
-3. If the Gradle wrapper is missing, generate it:
-   ```bash
-   gradle wrapper
-   ```
+3. Open the project root in Android Studio and let Gradle sync.
 
 4. Run on an emulator or device (API 26+).
 
@@ -87,7 +84,8 @@ com.panini.supportapp
     ├── login/          LoginScreen + LoginViewModel
     ├── ticketlist/     TicketListScreen + TicketListViewModel
     ├── ticketdetail/   TicketDetailScreen + TicketDetailViewModel
-    └── createticket/   CreateTicketScreen + CreateTicketViewModel
+    ├── createticket/   CreateTicketScreen + CreateTicketViewModel
+    └── settings/       SettingsScreen (Feature Flag toggles)
 ```
 
 ---
@@ -106,14 +104,14 @@ TicketDetailViewModel → TicketEventBus.emit(PriorityUpdated) → list re-sorts
 
 ### Feature Flags
 
-`FeatureFlags` object controls four behaviors:
+Two flags are controlled from **Settings** (gear icon on the ticket list):
 
 | Flag | Effect |
 |---|---|
 | `ticketCreationEnabled` | Shows/hides the Create Ticket FAB |
-| `priorityUpdateEnabled` | Shows/hides the "Cambiar Prioridad" button |
-| `adminFeaturesEnabled` | Reserved for admin panel (Phase 2) |
-| `logisticsCategoryVisible` | Includes/excludes LOGISTICS in creation form |
+| `priorityUpdateEnabled` | Shows/hides the "Cambiar Prioridad" button in ticket detail |
+
+Flags use Compose `mutableStateOf`, so toggling them in Settings updates the UI immediately.
 
 ### Switching to real backend
 
