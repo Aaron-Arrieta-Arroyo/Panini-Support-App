@@ -161,13 +161,7 @@ Status updates remain available even when priority updates are disabled.
 
 ## 5. Ticket list UI
 
-The list shows a **compact card** with three elements only (full data stays on the detail screen):
-
-1. **Title**
-2. **Priority badge** — vivid colors: High red, Medium yellow, Low green
-3. **Status badge** — Open red, In Progress blue, Resolved green, Closed gray
-
-Detail screen shows all fields: id, title, status, priority, supplier, category, created date, assignee, affected units, description, and action buttons.
+The list card shows **title**, **priority badge**, **status badge**, **category**, **supplier**, and **created date**. Priority and status use vivid badge colors (red / yellow / green for priority; red / blue / green / gray for status). Full ticket data remains on the detail screen.
 
 ---
 

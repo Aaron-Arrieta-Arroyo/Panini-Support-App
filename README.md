@@ -102,7 +102,7 @@ TicketDetailViewModel  → PriorityUpdated → list re-sorts by priority
 
 ### Ticket list UI
 
-Each list card shows **title**, **priority badge**, and **status badge** only. Priority uses red / yellow / green; status uses red / blue / green / gray. Full ticket data appears on the detail screen.
+Each list card shows **title**, **priority badge**, **status badge**, **category**, **supplier**, and **date**. Badges use vivid colors (priority: red / yellow / green; status: red / blue / green / gray). Full ticket data appears on the detail screen.
 
 ### Feature Flags
 
